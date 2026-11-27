@@ -1,0 +1,1477 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Castonneur">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#1b050d">
+<link rel="icon" id="favicon" type="image/png" href="">
+<title>Castonneur</title>
+<meta name="description" content="Réglage d'angle, cycles prédéfinis, soufflerie automatique et suivi de l'appareil : le taille-crayon connecté Castonneur.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Inter:wght@400;500;600&family=Manrope:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<style>
+ @property --bg-inner { syntax: '<color>'; inherits: true; initial-value: #7c1d3c; }
+@property --bg-mid { syntax: '<color>'; inherits: true; initial-value: #4d0f26; }
+@property --bg-outer { syntax: '<color>'; inherits: true; initial-value: #1b050d; }
+@property --blob1 { syntax: '<color>'; inherits: true; initial-value: #b02a58; }
+@property --blob2 { syntax: '<color>'; inherits: true; initial-value: #8a1f3f; }
+@property --accent { syntax: '<color>'; inherits: true; initial-value: #e6c7a0; }
+:root {
+    transition: --bg-inner .9s ease, --bg-mid .9s ease, --bg-outer .9s ease, --blob1 .9s ease, --blob2 .9s ease, --accent .9s ease;
+    --blob1: #b02a58;
+    --blob2: #8a1f3f;
+    --text-color: #ffffff;
+    --muted-color: rgba(255, 255, 255, 0.68);
+    --glass-bg: rgba(255, 255, 255, 0.06);
+    --glass-border: rgba(255, 255, 255, 0.12);
+    --font-main: 'Inter', sans-serif;
+    --font-heading: 'Outfit', sans-serif;
+    --accent: #e6c7a0;
+    --on-accent: #2b0b16;
+    --bg-inner: #7c1d3c;
+    --bg-mid: #4d0f26;
+    --bg-outer: #1b050d;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    background: radial-gradient(circle at 50% 45%, var(--bg-inner) 0%, var(--bg-mid) 52%, var(--bg-outer) 100%);
+    color: var(--text-color);
+    font-family: var(--font-main);
+    overflow: hidden;
+    height: 100vh;
+}
+body::before { content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background-image: linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+    background-size: 56px 56px; mask-image: radial-gradient(circle at center, #000 0%, transparent 75%); -webkit-mask-image: radial-gradient(circle at center, #000 0%, transparent 75%); }
+button { font-family: inherit; }
+
+/* Types de crayon */
+.type-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .55rem; }
+.type-btn { display: flex; flex-direction: column; align-items: flex-start; gap: .3rem; text-align: left; color: #fff; cursor: pointer; padding: .65rem .7rem .6rem;
+    background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 14px; transition: all .3s; }
+.type-btn:hover { background: rgba(255,255,255,.12); border-color: rgba(255,255,255,.4); }
+.type-btn.active { border-color: var(--accent); background: rgba(255,255,255,.1); }
+.type-btn .tp { display: block; width: 100%; height: 9px; border-radius: 5px; background: linear-gradient(90deg, var(--b) 0 74%, #e8c48b 74% 86%, var(--l) 86% 100%); }
+.type-btn b { font-size: .86rem; font-weight: 600; }
+.type-btn small { font-size: .66rem; color: var(--muted-color); }
+.type-note { margin-top: .7rem; font-size: .8rem; color: var(--muted-color); line-height: 1.45; min-height: 2.3em; }
+
+/* Sélecteur de couleur du fond */
+.theme-fab { position: fixed; right: 1.4rem; bottom: 1.4rem; z-index: 260; display: flex; flex-direction: column; align-items: flex-end; gap: .7rem; }
+.theme-btn { width: 48px; height: 48px; border-radius: 50%; border: 1px solid rgba(255,255,255,.22); background: rgba(0,0,0,.4); color: #fff; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    box-shadow: 0 8px 24px rgba(0,0,0,.3); transition: transform .3s ease, background .3s; }
+.theme-btn:hover { background: rgba(0,0,0,.6); transform: scale(1.06); }
+.theme-btn[aria-expanded="true"] { background: var(--accent); color: var(--on-accent); }
+.theme-panel { display: none; background: rgba(20,6,12,.78); border: 1px solid rgba(255,255,255,.18); border-radius: 18px; padding: .85rem .9rem .9rem;
+    backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); box-shadow: 0 16px 40px rgba(0,0,0,.4); width: 214px; }
+.theme-panel.open { display: block; animation: popIn .25s ease; }
+@keyframes popIn { from { opacity: 0; transform: translateY(8px) scale(.96); } to { opacity: 1; transform: none; } }
+.theme-panel h4 { font-family: 'Manrope', sans-serif; font-size: .62rem; letter-spacing: .16em; text-transform: uppercase; color: var(--muted-color); margin-bottom: .7rem; font-weight: 700; }
+.swatches { display: grid; grid-template-columns: repeat(3, 1fr); gap: .55rem; }
+.swatch { display: flex; flex-direction: column; align-items: center; gap: .3rem; background: none; border: 0; color: var(--muted-color); font-size: .62rem; cursor: pointer; padding: .2rem 0; }
+.swatch i { width: 40px; height: 40px; border-radius: 50%; border: 2px solid rgba(255,255,255,.18); transition: transform .25s, border-color .25s; display: block; }
+.swatch:hover i { transform: scale(1.1); }
+.swatch.active i { border-color: #fff; box-shadow: 0 0 0 3px rgba(255,255,255,.18); }
+.swatch.active { color: #fff; }
+
+/* Fond animé */
+.bg-anim { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+.bg-anim .blob { position: absolute; border-radius: 50%; filter: blur(80px); opacity: .55; will-change: transform; }
+.bg-anim .b1 { width: 55vmax; height: 55vmax; left: -15vmax; top: -18vmax; background: radial-gradient(circle, var(--blob1) 0%, transparent 65%); animation: drift1 26s ease-in-out infinite alternate; }
+.bg-anim .b2 { width: 50vmax; height: 50vmax; right: -18vmax; top: 15vh; background: radial-gradient(circle, var(--blob2) 0%, transparent 65%); animation: drift2 32s ease-in-out infinite alternate; }
+.bg-anim .b3 { width: 42vmax; height: 42vmax; left: 25vw; bottom: -22vmax; background: radial-gradient(circle, rgba(230,199,160,.55) 0%, transparent 65%); opacity: .3; animation: drift3 38s ease-in-out infinite alternate; }
+.bg-anim canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+@keyframes drift1 { to { transform: translate(18vw, 14vh) scale(1.2); } }
+@keyframes drift2 { to { transform: translate(-16vw, -12vh) scale(1.15); } }
+@keyframes drift3 { to { transform: translate(-20vw, -10vh) scale(1.25); } }
+@media (prefers-reduced-motion: reduce) { .bg-anim .blob { animation: none; } }
+
+/* Header */
+.header { display: flex; justify-content: space-between; align-items: center; padding: 1.6rem 4%; position: fixed; top: 0; width: 100%; z-index: 200; }
+.logo { display: flex; align-items: center; gap: .6rem; font-family: var(--font-heading); font-weight: 600; font-size: 1.35rem; letter-spacing: -.01em; }
+.logo-img { width: 44px; height: 44px; border-radius: 50%; display: block; box-shadow: 0 4px 14px rgba(0,0,0,.35), 0 0 0 2px rgba(255,255,255,.18); }
+.brand { border: 1.5px solid rgba(255,255,255,.55); border-radius: 14px; padding: .22rem .85rem .3rem; background: rgba(255,255,255,.06); }
+.logo small { font-family: 'Manrope', sans-serif; font-size: .6rem; letter-spacing: .2em; text-transform: uppercase; color: var(--accent);
+    border: 1px solid rgba(230,199,160,.45); border-radius: 6px; padding: .15rem .4rem; }
+.nav { display: flex; gap: .3rem; padding: .35rem; border-radius: 100px; background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.18);
+    box-shadow: 0 8px 32px rgba(0,0,0,.18), inset 0 0 0 1px rgba(255,255,255,.06); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+.nav-item { font-family: 'Manrope', sans-serif; color: var(--muted-color); font-size: .82rem; font-weight: 500; padding: .5rem 1.1rem; border-radius: 100px;
+    transition: all .3s ease; cursor: pointer; border: 0; background: none; }
+.nav-item b { opacity: .5; margin-right: .45rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.nav-item:hover, .nav-item.active { background: var(--accent); color: var(--on-accent); }
+.hdr-right { display: flex; align-items: center; gap: .7rem; }
+.bat-pill, .contact-btn { display: flex; align-items: center; gap: .6rem; background: rgba(0,0,0,.35); color: #fff; border: 1px solid rgba(255,255,255,.1);
+    padding: .65rem 1.1rem; border-radius: 100px; font-weight: 600; font-size: .8rem; font-variant-numeric: tabular-nums; }
+.contact-btn { cursor: pointer; transition: all .3s ease; }
+.contact-btn:hover { background: rgba(0,0,0,.55); transform: translateY(-2px); }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: #4ade80; animation: ping 1.8s infinite; }
+.offline .dot { background: #94a3b8; animation: none; box-shadow: none; }
+@keyframes ping { 0% { box-shadow: 0 0 0 0 rgba(74,222,128,.55); } 70% { box-shadow: 0 0 0 9px rgba(74,222,128,0); } 100% { box-shadow: 0 0 0 0 rgba(74,222,128,0); } }
+
+/* Hero */
+.hero { height: 100vh; display: flex; align-items: center; justify-content: center; padding: 0 4%; padding-top: 5rem; position: relative; z-index: 1; }
+.hero-content { width: 100%; height: 100%; position: relative; }
+
+.main-title { font-family: var(--font-heading); font-size: clamp(2.6rem, 4.6vw, 5rem); line-height: 1.02; font-weight: 600; letter-spacing: -.03em; color: #fff; white-space: nowrap; }
+.main-title .dim { color: rgba(255,255,255,.5); }
+.eyebrow { font-family: 'Manrope', sans-serif; font-weight: 700; font-size: .7rem; letter-spacing: .2em; text-transform: uppercase; color: var(--accent); }
+
+/* Pages */
+.page { position: absolute; inset: 0; display: none; justify-content: space-between; align-items: stretch; z-index: 100; pointer-events: none; }
+.page.active { display: flex; }
+.col-left { display: flex; flex-direction: column; height: 100%; padding: 4.2rem 0 4.6rem; gap: 1.35rem; width: 470px; }
+.col-right { display: flex; flex-direction: column; justify-content: flex-start; align-items: stretch; height: 100%; padding: 4.2rem 0 4.6rem; width: 450px; gap: 1.1rem; }
+.ia { pointer-events: auto; }
+.description { color: var(--muted-color); font-size: 1.04rem; line-height: 1.6; max-width: 430px; }
+
+.primary-btn { display: flex; align-items: center; gap: 1.3rem; background: rgba(0,0,0,.45); color: #fff; border: 1px solid rgba(255,255,255,.1); font-size: .95rem;
+    padding: .4rem .4rem .4rem 1.6rem; border-radius: 100px; font-weight: 600; cursor: pointer; width: fit-content; transition: all .3s ease; }
+.primary-btn:hover { background: rgba(0,0,0,.65); transform: translateY(-2px); }
+.primary-btn:disabled { opacity: .55; cursor: progress; transform: none; }
+.plus-icon { background: var(--accent); color: var(--on-accent); width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
+.plus-icon svg { display: block; }
+.ghost-btn { background: var(--glass-bg); color: #fff; border: 1px solid var(--glass-border); padding: .85rem 1.4rem; border-radius: 100px;
+    font-weight: 600; font-size: .88rem; cursor: pointer; transition: all .3s; backdrop-filter: blur(10px); }
+.ghost-btn:hover { background: rgba(255,255,255,.14); border-color: rgba(255,255,255,.4); }
+.btn-row { display: flex; gap: .8rem; flex-wrap: wrap; align-items: center; }
+
+/* Barre d'état fixe */
+.status-bar { position: fixed; left: 4%; bottom: 1.5rem; z-index: 200; display: flex; flex-direction: column; gap: .45rem; max-width: 420px; }
+.sb-line { font-family: 'Manrope', sans-serif; font-size: .68rem; letter-spacing: .12em; text-transform: uppercase; color: var(--muted-color); }
+.sb-line b { color: #fff; font-weight: 700; }
+.cmdline { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .66rem; color: rgba(255,255,255,.55); background: rgba(0,0,0,.28);
+    border: 1px solid var(--glass-border); border-radius: 8px; padding: .4rem .65rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Cartes */
+.glass-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 22px; padding: 1.3rem 1.4rem;
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); text-align: left; width: 100%; pointer-events: auto; }
+.card-title { font-family: 'Manrope', sans-serif; font-size: .72rem; letter-spacing: .16em; color: var(--muted-color); text-transform: uppercase; margin-bottom: .8rem; font-weight: 700; }
+.big-num { font-family: var(--font-heading); font-weight: 600; font-size: 4rem; line-height: 1; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+.metrics { display: grid; grid-template-columns: 1fr 1fr; gap: .7rem; margin-top: .9rem; }
+.metrics.three { grid-template-columns: repeat(3, 1fr); }
+.metric { background: rgba(0,0,0,.22); border-radius: 14px; padding: .7rem .9rem; }
+.metric span { display: block; font-size: .66rem; color: var(--muted-color); letter-spacing: .08em; text-transform: uppercase; margin-bottom: .2rem; }
+.metric b { font-size: 1.04rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.rows { display: flex; flex-direction: column; }
+.row { display: flex; justify-content: space-between; align-items: center; padding: .5rem 0; border-bottom: 1px solid rgba(255,255,255,.07); font-size: .92rem; }
+.row:last-child { border-bottom: 0; }
+.row span { color: var(--muted-color); }
+.row b { font-weight: 600; font-variant-numeric: tabular-nums; }
+
+/* Slider / chips / toggle */
+input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; max-width: 400px; height: 5px; border-radius: 5px; background: rgba(255,255,255,.2); outline: none; pointer-events: auto; }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%; background: var(--accent); border: 4px solid rgba(0,0,0,.35); cursor: grab; }
+input[type=range]::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; background: var(--accent); border: 4px solid rgba(0,0,0,.35); cursor: grab; }
+.slider-label { display: flex; justify-content: space-between; max-width: 400px; font-size: .7rem; color: var(--muted-color); margin-bottom: .6rem; letter-spacing: .04em; }
+.chips { display: flex; gap: .45rem; flex-wrap: wrap; }
+.chip { padding: .6rem 1.1rem; border-radius: 100px; background: var(--glass-bg); border: 1px solid var(--glass-border); color: #fff; font-size: .84rem; font-weight: 600; cursor: pointer; transition: all .3s; }
+.chip:hover { background: rgba(255,255,255,.14); }
+.chip.active { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.toggle-row { display: flex; align-items: center; gap: .9rem; font-size: .95rem; font-weight: 600; }
+.toggle { width: 48px; height: 28px; border-radius: 28px; background: rgba(255,255,255,.2); border: none; position: relative; cursor: pointer; transition: background .3s; }
+.toggle::after { content: ''; position: absolute; top: 4px; left: 4px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: transform .3s cubic-bezier(.34,1.56,.64,1); }
+.toggle.on { background: var(--accent); }
+.toggle.on::after { transform: translateX(20px); background: var(--on-accent); }
+
+/* Cycles */
+.cycle-list { display: flex; flex-direction: column; gap: .5rem; width: 100%; pointer-events: auto; }
+.cycle-row { display: flex; align-items: center; gap: .9rem; text-align: left; color: #fff; cursor: pointer; padding: .72rem 1.05rem .72rem .7rem;
+    background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 16px; backdrop-filter: blur(10px); transition: all .35s cubic-bezier(.175,.885,.32,1.275); }
+.cycle-row:hover { background: rgba(255,255,255,.12); border-color: rgba(255,255,255,.4); transform: translateX(-5px); }
+.cycle-row.active { border-color: var(--accent); background: rgba(230,199,160,.1); }
+.passes { width: 46px; height: 46px; border-radius: 11px; background: rgba(0,0,0,.35); display: flex; align-items: center; justify-content: center;
+    font-family: 'Manrope', sans-serif; font-weight: 700; font-size: .72rem; letter-spacing: .04em; flex: none; transition: all .3s; }
+.cycle-row.active .passes { background: var(--accent); color: var(--on-accent); }
+.cr-txt { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.cr-txt b { font-size: .96rem; font-weight: 600; } .cr-txt small { font-size: .74rem; color: var(--muted-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cr-dur { font-size: .82rem; color: var(--muted-color); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+.timeline { display: flex; gap: 6px; max-width: 400px; pointer-events: auto; }
+.seg { display: flex; flex-direction: column; gap: .35rem; min-width: 0; }
+.seg .bar { height: 6px; border-radius: 6px; background: rgba(255,255,255,.15); overflow: hidden; }
+.seg .fill { height: 100%; width: 0; background: var(--accent); }
+.seg small { font-size: .58rem; color: var(--muted-color); letter-spacing: .08em; text-transform: uppercase; }
+.run-info { font-size: .76rem; color: var(--muted-color); min-height: 1.2em; margin-top: .6rem; }
+
+/* Jauge bac */
+.gauge-wrap { display: flex; gap: 1.2rem; align-items: stretch; }
+.gauge { position: relative; width: 66px; height: 150px; border-radius: 14px; background: rgba(0,0,0,.28); border: 1px solid rgba(255,255,255,.3); overflow: hidden; flex: none; }
+.gauge-fill { position: absolute; left: 0; right: 0; bottom: 0; height: 0; background: linear-gradient(#e7c590, #b98a4e); }
+.gauge.full .gauge-fill { background: linear-gradient(#fca5a5, #dc2626); }
+.gauge-thr { position: absolute; left: 0; right: 0; border-top: 2px dashed rgba(255,255,255,.85); }
+.gauge-thr::after { content: 'seuil'; position: absolute; right: 4px; top: 2px; font-size: .52rem; letter-spacing: .1em; text-transform: uppercase; color: #fff; }
+.gauge-info { flex: 1; display: flex; flex-direction: column; gap: .55rem; min-width: 0; }
+.pill { display: inline-flex; align-items: center; padding: .3rem .75rem; border-radius: 100px; font-size: .76rem; font-weight: 700; width: fit-content; background: rgba(74,222,128,.18); color: #86efac; }
+.pill.warn { background: rgba(250,204,21,.18); color: #fde047; }
+.pill.full { background: rgba(248,113,113,.24); color: #fecaca; animation: pulse 1s infinite; }
+.pill.blow { background: rgba(125,211,252,.22); color: #7dd3fc; }
+@keyframes pulse { 50% { opacity: .55; } }
+.log { list-style: none; display: flex; flex-direction: column; gap: .28rem; font-size: .68rem; color: var(--muted-color); }
+.log li span { color: rgba(255,255,255,.4); font-family: ui-monospace, monospace; margin-right: .45rem; }
+.alert { display: none; font-size: .8rem; font-weight: 600; background: rgba(248,113,113,.18); border: 1px solid rgba(248,113,113,.5); color: #fecaca; padding: .65rem .95rem; border-radius: 12px; max-width: 400px; }
+.alert.show { display: block; }
+
+/* Batterie */
+.bat-big { display: flex; align-items: center; gap: 1rem; }
+.bat-bar { flex: 1; height: 14px; border-radius: 8px; background: rgba(0,0,0,.3); border: 1px solid rgba(255,255,255,.2); overflow: hidden; }
+.bat-bar i { display: block; height: 100%; width: 78%; background: #4ade80; border-radius: 8px; transition: background .4s; }
+.bat-head { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: .7rem; }
+
+/* Barres d'utilisation */
+.ubar { display: grid; grid-template-columns: 86px 1fr 40px; align-items: center; gap: .6rem; font-size: .8rem; padding: .16rem 0; }
+.ubar span { color: var(--muted-color); }
+.ubar .track { height: 6px; border-radius: 6px; background: rgba(255,255,255,.12); overflow: hidden; }
+.ubar .track i { display: block; height: 100%; background: var(--accent); border-radius: 6px; }
+.ubar b { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+/* Scène */
+.stage-wrap { position: absolute; top: 50%; left: 50%; width: min(42vw, 540px); transform: translate(-50%, -52%); z-index: 1;
+    opacity: 0; animation: fadeIn 1.5s ease-out .3s forwards, float 6s ease-in-out infinite; pointer-events: none; }
+.stage-wrap { --lens: 0; clip-path: inset(calc(-320px * (1 - var(--lens))) round calc(26px * var(--lens))); }
+.stage-wrap::after { content: ''; position: absolute; inset: 0; border-radius: 26px; border: 1px solid rgba(255,255,255,.28); box-shadow: inset 0 0 60px rgba(0,0,0,.25); opacity: var(--lens); pointer-events: none; }
+.stage-tilt { will-change: transform; filter: drop-shadow(0 30px 40px rgba(0,0,0,.45)); }
+#stage { width: 100%; height: auto; display: block; overflow: visible; }
+@keyframes fadeIn { to { opacity: 1; } }
+@keyframes float { 0%,100% { transform: translate(-50%, -52%); } 50% { transform: translate(-50%, calc(-52% - 12px)); } }
+.air { opacity: 0; stroke-dasharray: 6 8; }
+.blowing .air { opacity: .9; animation: dash .35s linear infinite; }
+@keyframes dash { to { stroke-dashoffset: -14; } }
+
+/* Pager + toast */
+.pager { position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%); z-index: 200; display: flex; align-items: center; gap: 1rem; }
+.pager span { font-size: .78rem; color: var(--muted-color); font-weight: 600; letter-spacing: .12em; min-width: 3rem; text-align: center; font-variant-numeric: tabular-nums; }
+.nav-arrow { background: var(--glass-bg); border: 1px solid var(--glass-border); color: #fff; width: 36px; height: 36px; border-radius: 50%; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; transition: background .3s; backdrop-filter: blur(10px); }
+.nav-arrow:hover { background: rgba(255,255,255,.18); }
+.toast { position: fixed; left: 50%; bottom: 4.6rem; transform: translate(-50%, 20px); z-index: 300; opacity: 0; pointer-events: none; background: rgba(0,0,0,.65);
+    border: 1px solid rgba(255,255,255,.2); backdrop-filter: blur(16px); padding: .75rem 1.3rem; border-radius: 12px; font-size: .82rem; font-weight: 600; max-width: 90vw; text-align: center; }
+
+@media (hover: none) {
+    .cycle-row:hover { transform: none; }
+    .primary-btn:hover, .contact-btn:hover { transform: none; }
+}
+@media (min-width: 1101px) and (max-height: 840px) {
+    .col-left, .col-right { padding-top: 3.6rem; padding-bottom: 4.2rem; gap: .9rem; }
+    .glass-card { padding: .95rem 1.2rem; }
+    .row { padding: .3rem 0; font-size: .86rem; }
+    .ubar { padding: .08rem 0; font-size: .74rem; }
+    .metric { padding: .5rem .75rem; }
+    .metrics { margin-top: .6rem; gap: .5rem; }
+    .big-num { font-size: 3.1rem; }
+    .main-title { font-size: clamp(2.4rem, 4vw, 3.8rem); }
+    .description { font-size: .95rem; }
+    .cycle-row { padding: .5rem .9rem .5rem .6rem; }
+    .passes { width: 40px; height: 40px; }
+    .cycle-list { gap: .4rem; }
+    .gauge { height: 120px; }
+    .type-btn { padding: .45rem .6rem; gap: .2rem; }
+    .type-note { margin-top: .45rem; font-size: .76rem; }
+    .cmdline { display: none; }
+    .status-bar { bottom: 1rem; }
+    .bat-head { margin-bottom: .4rem; }
+    .main-title { font-size: clamp(2.2rem, 3.6vw, 3.4rem); }
+    .col-left { gap: .75rem; }
+    .metric span { font-size: .6rem; }
+    .eyebrow { margin-bottom: -.2rem; }
+}
+@media (max-width: 1100px) {
+    html, body { overflow-x: hidden; }
+    body { overflow-y: auto; height: auto; min-height: 100vh; min-height: 100dvh; }
+    .hero { height: auto; min-height: 100vh; min-height: 100dvh; padding: 4.2rem 5% 0; display: block; }
+    .hero-content { height: auto; min-height: 0; display: flex; flex-direction: column; align-items: center; }
+    .stage-wrap { position: relative; top: auto; left: auto; width: min(92vw, 520px); margin: .5rem auto 0; animation: fadeIn 1.2s ease-out .2s forwards; transform: none; }
+    .page.active { position: relative; inset: auto; width: 100%; max-width: 560px; flex-direction: column; align-items: stretch; justify-content: flex-start; gap: 0; }
+    .col-left, .col-right { width: 100%; height: auto; padding: 1.2rem 0 0; }
+    .col-right { padding-top: 1rem; }
+    .main-title { font-size: clamp(2.2rem, 9vw, 3.2rem); white-space: normal; }
+    .description { max-width: none; font-size: .94rem; }
+    .slider-label, input[type=range], .timeline, .alert, .glass-card, .metrics { max-width: none; }
+    .glass-card { margin: 0; }
+    #specGrid, .col-left .glass-card { max-width: none !important; }
+    input[type=range] { height: 8px; margin: .4rem 0; }
+    input[type=range]::-webkit-slider-thumb { width: 30px; height: 30px; }
+    input[type=range]::-moz-range-thumb { width: 26px; height: 26px; }
+    .chip { padding: .65rem 1rem; min-height: 40px; }
+    .ghost-btn { min-height: 44px; }
+    .primary-btn { min-height: 48px; }
+    .cycle-row { padding: .75rem .9rem .75rem .7rem; }
+    .toggle { width: 54px; height: 32px; }
+    .toggle::after { width: 24px; height: 24px; }
+    .toggle.on::after { transform: translateX(22px); }
+
+    /* Header compact */
+    .header { padding: .8rem 5%; background: linear-gradient(rgba(27,5,13,.85), rgba(27,5,13,0)); }
+    .logo { font-size: 1.15rem; }
+    .logo-img { width: 36px; height: 36px; }
+    .logo small { display: none; }
+    .bat-pill, .contact-btn { padding: .5rem .8rem; font-size: .74rem; }
+    #connTxt, #connSub { display: none; }
+    .contact-btn { padding: .65rem .8rem; }
+
+    /* Navigation en barre d'onglets en bas */
+    .nav { position: fixed; left: 50%; bottom: calc(.8rem + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 250; width: calc(100% - 1.6rem); max-width: 520px;
+        justify-content: space-between; background: rgba(27,5,13,.82); }
+    .nav-item { flex: 1; text-align: center; padding: .7rem .2rem; font-size: .72rem; min-height: 44px; }
+    .nav-item b { display: none; }
+    .pager { display: none; }
+    .toast { bottom: calc(5.4rem + env(safe-area-inset-bottom)); width: calc(100% - 2rem); }
+    .theme-fab { right: 1rem; bottom: calc(5.6rem + env(safe-area-inset-bottom)); }
+    .theme-btn { width: 44px; height: 44px; }
+
+    .status-bar { position: static; max-width: 560px; width: 100%; margin: 1.6rem auto 0; padding: 0 5% calc(6rem + env(safe-area-inset-bottom)); }
+    .sb-line { font-size: .62rem; }
+}
+@media (max-width: 420px) {
+    .metrics.three { grid-template-columns: 1fr 1fr; }
+    .hdr-right { gap: .4rem; }
+    .bat-pill { gap: .4rem; }
+    .gauge { height: 130px; width: 58px; }
+    .big-num { font-size: 3rem; }
+}
+</style>
+</head>
+<body>
+
+<header class="header">
+    <div class="logo">
+        <img class="logo-img" data-logo alt="Logo Castonneur" width="44" height="44">
+        <span class="brand">Castonneur</span>
+    </div>
+    <nav class="nav">
+        <button class="nav-item active" data-go="angle"><b>01</b>Angle</button>
+        <button class="nav-item" data-go="cycle"><b>02</b>Cycles</button>
+        <button class="nav-item" data-go="dust"><b>03</b>Soufflerie</button>
+        <button class="nav-item" data-go="info"><b>04</b>Informations</button>
+    </nav>
+    <div class="hdr-right">
+        <div class="bat-pill" id="batPill" title="Batterie">
+            <svg width="26" height="14" viewBox="0 0 26 14"><rect x=".5" y=".5" width="22" height="13" rx="3" fill="none" stroke="currentColor"/><rect x="23.5" y="4" width="2" height="6" rx="1" fill="currentColor"/><rect id="hdrBatFill" x="2.5" y="2.5" width="18" height="9" rx="1.5" fill="#4ade80"/></svg>
+            <span id="hdrBatTxt">78 %</span>
+        </div>
+        <button class="contact-btn" id="connBtn"><span class="dot"></span><span id="connTxt">Castonneur</span><span id="connSub" class="conn-sub"> · Connecté</span></button>
+    </div>
+</header>
+
+<div class="bg-anim" aria-hidden="true">
+    <i class="blob b1"></i><i class="blob b2"></i><i class="blob b3"></i>
+    <canvas id="bgCanvas"></canvas>
+</div>
+
+<main class="hero">
+<div class="hero-content" id="hero">
+
+    <!-- Le taille-crayon -->
+    <div class="stage-wrap">
+      <div class="stage-tilt" id="stageTilt">
+        <svg id="stage" viewBox="0 0 480 360" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="bodyGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#f7f2ec"/><stop offset=".55" stop-color="#ddd1c3"/><stop offset="1" stop-color="#b3a493"/>
+            </linearGradient>
+            <linearGradient id="woodGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6dcb0"/><stop offset="1" stop-color="#d9a96b"/></linearGradient>
+            <linearGradient id="metalGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f1f5f9"/><stop offset="1" stop-color="#94a3b8"/></linearGradient>
+            <clipPath id="binClip"><rect x="266" y="262" width="138" height="48" rx="6"/></clipPath>
+          </defs>
+          <g id="camG">
+          <ellipse cx="290" cy="340" rx="175" ry="13" fill="rgba(0,0,0,.35)"/>
+
+          <!-- crayon à tailler -->
+          <g id="pencilG">
+            <rect x="-130" y="138" width="36" height="24" rx="9" fill="#c9a0a6"/>
+            <rect x="-96" y="138" width="30" height="24" fill="url(#metalGrad)"/>
+            <path d="M-88 138V162M-80 138V162M-72 138V162" stroke="rgba(0,0,0,.25)" stroke-width="1.5"/>
+            <rect id="pencilBody" x="-66" y="138" width="150" height="24" fill="#f2b705"/>
+            <rect x="-66" y="138" width="150" height="8" fill="rgba(255,255,255,.3)"/>
+            <polygon points="84,138 84,162 128,150" fill="url(#woodGrad)"/>
+            <polygon id="pencilLead" points="116,145 116,155 128,150" fill="#2b2b33"/>
+          </g>
+
+          <!-- corps -->
+          <rect x="140" y="70" width="300" height="190" rx="38" fill="url(#bodyGrad)"/>
+          <rect x="152" y="78" width="276" height="24" rx="12" fill="rgba(255,255,255,.45)"/>
+          <rect x="156" y="81" width="122" height="19" rx="9.5" fill="rgba(255,255,255,.35)" stroke="rgba(60,20,32,.55)" stroke-width="1.2"/>
+          <text x="218" y="94.5" text-anchor="middle" font-family="Outfit,sans-serif" font-size="10.5" font-weight="700" letter-spacing="3.2" fill="rgba(60,20,32,.75)">CASTONNEUR</text>
+          <circle cx="300" cy="90" r="11.5" fill="#fff" stroke="rgba(60,20,32,.45)" stroke-width="1"/>
+          <image id="svgLogo" x="289.5" y="79.5" width="21" height="21" preserveAspectRatio="xMidYMid slice"/>
+          <text x="317" y="93" font-family="Manrope,sans-serif" font-size="6.5" font-weight="700" letter-spacing="1.6" fill="rgba(60,20,32,.5)">TC-PRO 2</text>
+          <rect x="170" y="256" width="40" height="10" rx="5" fill="#7d6f60"/>
+          <rect x="370" y="256" width="40" height="10" rx="5" fill="#7d6f60"/>
+          <ellipse cx="140" cy="150" rx="13" ry="31" fill="#2a1219"/>
+          <ellipse cx="142" cy="150" rx="7" ry="22" fill="#0c0407"/>
+
+          <!-- écran -->
+          <rect x="250" y="108" width="152" height="62" rx="10" fill="#0d1117" stroke="rgba(0,0,0,.35)"/>
+          <text id="scrAngle" x="262" y="132" font-family="Outfit,sans-serif" font-size="20" font-weight="600" fill="#e6c7a0">20°</text>
+          <text id="scrState" x="392" y="130" text-anchor="end" font-family="Manrope,sans-serif" font-size="9.5" font-weight="700" letter-spacing="1" fill="#7ee0b0">PRÊT</text>
+          <text id="scrCycle" x="262" y="149" font-family="Inter,sans-serif" font-size="10.5" fill="#e6edf3">C2 · Standard</text>
+          <text id="scrBin" x="262" y="163" font-family="Inter,sans-serif" font-size="9.5" fill="#8b98a5">BAC 18 %</text>
+          <circle id="led" cx="418" cy="94" r="4.5" fill="#4ade80"/>
+
+          <!-- écran : wifi + batterie -->
+          <g id="scrWifi" fill="#7ee0b0">
+            <rect x="336" y="127" width="2.4" height="3" rx=".6"/><rect x="340" y="124.5" width="2.4" height="5.5" rx=".6"/>
+            <rect x="344" y="122" width="2.4" height="8" rx=".6"/><rect x="348" y="119.5" width="2.4" height="10.5" rx=".6"/>
+          </g>
+          <text id="scrBat" x="361" y="162" text-anchor="end" font-family="Inter,sans-serif" font-size="9.5" fill="#cfe9dc">78 %</text>
+          <rect x="365" y="154" width="24" height="10" rx="2.5" fill="none" stroke="#8b98a5" stroke-width="1"/>
+          <rect x="389.6" y="157" width="2" height="4" rx="1" fill="#8b98a5"/>
+          <rect id="scrBatFill" x="366.5" y="155.5" width="21" height="7" rx="1.5" fill="#4ade80"/>
+
+          <!-- bloc batterie en façade -->
+          <rect x="166" y="110" width="76" height="28" rx="7" fill="#0d1117" stroke="rgba(0,0,0,.35)"/>
+          <g id="batSegs">
+            <rect x="171" y="115" width="11" height="18" rx="2" fill="#4ade80"/><rect x="184" y="115" width="11" height="18" rx="2" fill="#4ade80"/>
+            <rect x="197" y="115" width="11" height="18" rx="2" fill="#4ade80"/><rect x="210" y="115" width="11" height="18" rx="2" fill="#4ade80"/>
+            <rect x="223" y="115" width="11" height="18" rx="2" fill="#4ade80"/>
+          </g>
+          <rect x="242" y="118" width="3.5" height="12" rx="1.5" fill="#0d1117"/>
+          <text x="166" y="150" font-family="Manrope,sans-serif" font-size="6.5" font-weight="700" letter-spacing="1.8" fill="rgba(60,20,32,.55)">BATTERIE</text>
+          <text id="batMachPct" x="242" y="150" text-anchor="end" font-family="Manrope,sans-serif" font-size="7" font-weight="700" letter-spacing="1" fill="rgba(60,20,32,.7)">78 %</text>
+
+          <!-- voyants + port USB-C -->
+          <circle id="ledWifi" cx="388" cy="238" r="3.2" fill="#4ade80"/>
+          <circle id="ledChg" cx="402" cy="238" r="3.2" fill="#6b7280"/>
+          <circle id="ledBin" cx="416" cy="238" r="3.2" fill="#6b7280"/>
+          <text x="402" y="249" text-anchor="middle" font-family="Manrope,sans-serif" font-size="4.4" font-weight="700" letter-spacing=".6" fill="rgba(60,20,32,.5)">WIFI · CHG · BAC</text>
+          <rect x="436" y="170" width="13" height="30" rx="5.5" fill="#cfc3b4" stroke="rgba(0,0,0,.2)"/>
+          <rect x="440" y="177" width="5" height="16" rx="2.4" fill="#16161a"/>
+          <text x="418" y="188" text-anchor="end" font-family="Manrope,sans-serif" font-size="5.2" font-weight="700" letter-spacing="1" fill="rgba(60,20,32,.5)">USB-C</text>
+          <!-- grille d'aération -->
+          <g stroke="rgba(0,0,0,.18)" stroke-width="2" stroke-linecap="round">
+            <line x1="258" y1="232" x2="296" y2="232"/><line x1="258" y1="238" x2="296" y2="238"/><line x1="258" y1="244" x2="296" y2="244"/>
+          </g>
+
+          <!-- molette d'angle -->
+          <circle cx="188" cy="216" r="34" fill="#fffdf9" stroke="rgba(0,0,0,.18)" stroke-width="2"/>
+          <g id="dialTicks"></g>
+          <g id="dialLabels" font-family="Manrope,sans-serif" font-weight="700" text-anchor="middle"></g>
+          <g id="needle"><line x1="188" y1="216" x2="188" y2="189" stroke="#8f1d3f" stroke-width="3.5" stroke-linecap="round"/></g>
+          <circle cx="188" cy="216" r="4" fill="#2a1219"/>
+          <text x="188" y="235" text-anchor="middle" font-family="Manrope,sans-serif" font-size="5.2" font-weight="700" letter-spacing="1.6" fill="rgba(60,20,32,.5)">ANGLE</text>
+
+          <!-- fenêtre de lame -->
+          <circle cx="330" cy="216" r="30" fill="#16161a" stroke="rgba(255,255,255,.55)" stroke-width="2"/>
+          <g id="blade">
+            <g stroke="#cbd5e1" stroke-width="3" stroke-linecap="round">
+              <line x1="330" y1="216" x2="330" y2="192"/>
+              <line x1="330" y1="216" x2="351" y2="228"/>
+              <line x1="330" y1="216" x2="309" y2="228"/>
+            </g>
+            <circle cx="330" cy="216" r="22" fill="none" stroke="#94a3b8" stroke-width="2" stroke-dasharray="10 6"/>
+          </g>
+          <circle cx="330" cy="216" r="5" fill="#e6c7a0"/>
+
+          <g id="shavings"></g>
+
+          <!-- bac à poussière -->
+          <rect x="258" y="258" width="154" height="58" rx="12" fill="rgba(255,255,255,.12)" stroke="rgba(255,255,255,.5)" stroke-width="1.5"/>
+          <rect id="binFill" x="266" y="310" width="138" height="0" fill="#d9b27c" clip-path="url(#binClip)"/>
+          <line id="binThr" x1="262" x2="408" y1="271" y2="271" stroke="rgba(255,255,255,.75)" stroke-width="1.5" stroke-dasharray="4 4"/>
+
+          <!-- soufflerie -->
+          <g id="fan" transform="translate(214 288)">
+            <circle r="21" fill="rgba(0,0,0,.45)" stroke="rgba(255,255,255,.5)" stroke-width="1.5"/>
+            <g fill="#93c5fd">
+              <ellipse cx="0" cy="-10" rx="5" ry="9"/>
+              <ellipse cx="0" cy="-10" rx="5" ry="9" transform="rotate(90)"/>
+              <ellipse cx="0" cy="-10" rx="5" ry="9" transform="rotate(180)"/>
+              <ellipse cx="0" cy="-10" rx="5" ry="9" transform="rotate(270)"/>
+            </g>
+            <circle r="3.5" fill="#fff"/>
+          </g>
+          <g id="air" class="air" stroke="#bfdbfe" stroke-width="3" stroke-linecap="round" fill="none">
+            <path d="M238 278 L256 278"/><path d="M238 288 L256 288"/><path d="M238 298 L256 298"/>
+          </g>
+          <g id="puffs"></g>
+          </g>
+        </svg>
+      </div>
+    </div>
+
+    <!-- PAGE 1 : ANGLE -->
+    <section class="page active" data-page="angle">
+      <div class="col-left">
+        <div class="eyebrow">01 — Réglage</div>
+        <h1 class="main-title"><span class="dim">Angle de</span><br>taillage</h1>
+        <p class="description">Définissez l'angle de la pointe, du croquis ultra-fin à l'écriture robuste. La lame se cale automatiquement sur la valeur choisie.</p>
+        <div class="ia">
+          <div class="slider-label"><span>10° · très fine</span><span>40° · robuste</span></div>
+          <input type="range" id="angleRange" min="10" max="40" step="1" value="20">
+        </div>
+        <div class="chips ia" id="angleChips">
+          <button class="chip" data-a="12">Croquis 12°</button>
+          <button class="chip" data-a="16">Dessin 16°</button>
+          <button class="chip active" data-a="20">Standard 20°</button>
+          <button class="chip" data-a="25">Écriture 25°</button>
+        </div>
+        <div class="btn-row">
+          <button class="primary-btn ia" data-go="cycle">Choisir un cycle <span class="plus-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></button>
+        </div>
+      </div>
+      <div class="col-right">
+        <div class="glass-card">
+          <div class="card-title">Aperçu de la pointe</div>
+          <svg viewBox="0 0 360 120" width="100%" style="display:block">
+            <rect id="prevBody" x="0" y="25" width="60" height="70" fill="#f2b705"/>
+            <rect x="0" y="25" width="60" height="14" fill="rgba(255,255,255,.3)"/>
+            <polygon id="prevWood" points="60,25 60,95 160,60" fill="url(#woodGrad)"/>
+            <polygon id="prevLead" points="130,50 130,70 160,60" fill="#2b2b33"/>
+            <path id="prevArc" d="" fill="none" stroke="#e6c7a0" stroke-width="2"/>
+            <text id="prevTxt" x="0" y="0" fill="#e6c7a0" font-family="Inter,sans-serif" font-size="13" font-weight="700">α</text>
+          </svg>
+          <div class="big-num" id="angleVal">20°</div>
+          <div class="metrics">
+            <div class="metric"><span>Longueur de pointe</span><b id="tipLen">19,8 mm</b></div>
+            <div class="metric"><span>Profil</span><b id="tipProfile">Équilibrée</b></div>
+          </div>
+        </div>
+        <div class="glass-card">
+          <div class="card-title">Type de crayon</div>
+          <div class="type-grid ia" id="typeGrid"></div>
+          <div class="type-note" id="typeNote"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PAGE 2 : CYCLES -->
+    <section class="page" data-page="cycle">
+      <div class="col-left">
+        <div class="eyebrow">02 — Programmes</div>
+        <h1 class="main-title"><span class="dim">Cycles</span><br>prédéfinis</h1>
+        <p class="description">Cinq programmes calibrés en usine. Sélectionnez un cycle pour ouvrir sa page dédiée : réglages détaillés, déroulement et lancement.</p>
+        <div class="glass-card" style="max-width:400px">
+          <div class="card-title">État actuel</div>
+          <div class="rows">
+            <div class="row"><span>Cycle sélectionné</span><b id="pgCycle"></b></div>
+            <div class="row"><span>Angle de taillage</span><b id="pgAngle"></b></div>
+            <div class="row"><span>Niveau du bac</span><b id="pgBin"></b></div>
+            <div class="row"><span>Dernier cycle</span><b id="pgLast">—</b></div>
+          </div>
+        </div>
+      </div>
+      <div class="col-right">
+        <div class="cycle-list" id="cycleList"></div>
+      </div>
+    </section>
+
+    <!-- PAGE DÉDIÉE : UN CYCLE -->
+    <section class="page" data-page="run">
+      <div class="col-left">
+        <div class="eyebrow" id="rnEyebrow">Cycle C2</div>
+        <h1 class="main-title"><span class="dim">Cycle</span><br><span id="rnName">Standard</span></h1>
+        <p class="description" id="rnDesc"></p>
+        <div class="btn-row">
+          <button class="primary-btn ia" id="runBtn"><span id="runTxt">Lancer le cycle</span> <span class="plus-icon" id="runIcon"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4l13 8-13 8z"/></svg></span></button>
+          <button class="ghost-btn ia" data-go="cycle">Tous les cycles</button>
+        </div>
+        <div>
+          <div class="timeline" id="timeline"></div>
+          <div class="run-info" id="runInfo">Simulation accélérée (×4) pour la démonstration.</div>
+        </div>
+        <div class="metrics three ia" id="specGrid" style="max-width:400px"></div>
+      </div>
+      <div class="col-right">
+        <div class="glass-card">
+          <div class="card-title">Déroulement</div>
+          <div class="bat-head"><div class="big-num" id="rnPct">0 %</div><span class="pill warn" id="rnPill">Prêt</span></div>
+          <div class="bat-bar"><i id="rnBar" style="width:0%;background:var(--accent)"></i></div>
+          <div class="rows" style="margin-top:.8rem">
+            <div class="row"><span>Angle appliqué</span><b id="rnAngle"></b></div>
+            <div class="row"><span>Copeaux estimés</span><b id="rnDust"></b></div>
+            <div class="row"><span>Bac après le cycle</span><b id="rnBin"></b></div>
+            <div class="row"><span>Batterie après le cycle</span><b id="rnBat"></b></div>
+          </div>
+        </div>
+        <div class="glass-card">
+          <div class="card-title">Autres cycles</div>
+          <div class="chips ia" id="otherCycles"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PAGE DÉDIÉE : SOUFFLERIE -->
+    <section class="page" data-page="blower">
+      <div class="col-left">
+        <div class="eyebrow">Entretien · Bac à poussière</div>
+        <h1 class="main-title"><span class="dim">Soufflerie</span><br><span id="blTitle">prête</span></h1>
+        <p class="description" id="blInfo">Aucune soufflerie lancée. Utilisez le bouton pour vider le bac.</p>
+        <div class="btn-row">
+          <button class="primary-btn ia" id="blBtn"><span id="blBtnTxt">Relancer la soufflerie</span> <span class="plus-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9h11a3 3 0 1 0-3-3M3 15h15a3 3 0 1 1-3 3M3 12h7"/></svg></span></button>
+          <button class="ghost-btn ia" data-go="dust">Retour au bac</button>
+        </div>
+      </div>
+      <div class="col-right">
+        <div class="glass-card">
+          <div class="card-title">Vidage du bac</div>
+          <div class="bat-head"><div class="big-num" id="blPct">0 %</div><span class="pill" id="blPill">Arrêtée</span></div>
+          <div class="bat-bar"><i id="blBar" style="width:0%"></i></div>
+          <div class="metrics three">
+            <div class="metric"><span>Niveau initial</span><b id="blStart">—</b></div>
+            <div class="metric"><span>Débit d'air</span><b id="blFlow">0 L/min</b></div>
+            <div class="metric"><span>Déclenchement</span><b id="blReason">—</b></div>
+          </div>
+        </div>
+        <div class="glass-card">
+          <div class="card-title">Journal</div>
+          <ul class="log" id="blLog"></ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- PAGE 3 : SOUFFLERIE -->
+    <section class="page" data-page="dust">
+      <div class="col-left">
+        <div class="eyebrow">03 — Entretien</div>
+        <h1 class="main-title"><span class="dim">Bac à</span><br>poussière</h1>
+        <p class="description">Activez la soufflerie à tout moment, ou laissez-la se déclencher automatiquement lorsque le bac atteint le seuil défini.</p>
+        <div class="btn-row">
+          <button class="primary-btn ia" id="blowBtn"><span id="blowTxt">Activer la soufflerie</span> <span class="plus-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9h11a3 3 0 1 0-3-3M3 15h15a3 3 0 1 1-3 3M3 12h7"/></svg></span></button>
+          <button class="ghost-btn ia" id="fillBtn">Simuler un taillage (+15 %)</button>
+        </div>
+        <div class="toggle-row ia"><button class="toggle on" id="autoToggle" aria-label="Soufflerie automatique"></button><span>Soufflerie automatique</span></div>
+        <div class="ia">
+          <div class="slider-label"><span>Seuil de déclenchement</span><span id="thrTxt">80 %</span></div>
+          <input type="range" id="thrRange" min="50" max="95" step="5" value="80">
+        </div>
+        <div class="alert" id="alertBox">Bac plein — activez la soufflerie ou la fonction automatique.</div>
+      </div>
+      <div class="col-right">
+        <div class="glass-card">
+          <div class="card-title">Niveau du bac</div>
+          <div class="gauge-wrap">
+            <div class="gauge" id="gauge"><div class="gauge-fill" id="gaugeFill"></div><div class="gauge-thr" id="gaugeThr"></div></div>
+            <div class="gauge-info">
+              <div class="big-num" id="binPct">18%</div>
+              <span class="pill" id="binPill">Niveau normal</span>
+              <ul class="log" id="logList"></ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PAGE 4 : INFORMATIONS -->
+    <section class="page" data-page="info">
+      <div class="col-left">
+        <div class="eyebrow">04 — Appareil</div>
+        <h1 class="main-title"><span class="dim">Informations</span><br>appareil</h1>
+        <p class="description">État de la batterie, historique d'utilisation et caractéristiques de votre Castonneur.</p>
+        <div class="glass-card">
+          <div class="card-title">Batterie</div>
+          <div class="bat-head">
+            <div class="big-num" id="batPct">78%</div>
+            <span class="pill" id="batState">Bonne</span>
+          </div>
+          <div class="bat-big"><div class="bat-bar"><i id="batBar"></i></div></div>
+          <div class="metrics three">
+            <div class="metric"><span>Autonomie</span><b id="batAuto">—</b></div>
+            <div class="metric"><span>Tension</span><b id="batVolt">—</b></div>
+            <div class="metric"><span>Recharges</span><b id="batCycles">112</b></div>
+            <div class="metric"><span>Santé batterie</span><b>96 %</b></div>
+            <div class="metric"><span>Capacité</span><b>2 000 mAh</b></div>
+            <div class="metric"><span>Plein dans</span><b id="batFull">—</b></div>
+          </div>
+          <div class="btn-row" style="margin-top:.9rem"><button class="ghost-btn ia" id="chargeBtn">Simuler la charge</button></div>
+        </div>
+      </div>
+      <div class="col-right">
+        <div class="glass-card">
+          <div class="card-title">Utilisation</div>
+          <div class="rows">
+            <div class="row"><span>Cycles réalisés</span><b id="infoTotal">1 248</b></div>
+            <div class="row"><span>Aujourd'hui</span><b id="infoToday">14</b></div>
+            <div class="row"><span>Heures moteur</span><b id="infoHours">41,3 h</b></div>
+            <div class="row"><span>Vidages du bac</span><b id="infoEmpties">87</b></div>
+            <div class="row"><span>Lame (durée de vie)</span><b id="infoWear">87 %</b></div>
+          </div>
+          <div id="usageBars" style="margin-top:.7rem"></div>
+        </div>
+        <div class="glass-card">
+          <div class="card-title">Appareil</div>
+          <div class="rows">
+            <div class="row"><span>Nom</span><b>Castonneur</b></div>
+            <div class="row"><span>Modèle · N° de série</span><b>TC-Pro 2 · 0481</b></div>
+            <div class="row"><span>Firmware</span><b>2.4.1</b></div>
+            <div class="row"><span>Connexion</span><b id="infoLink">Wi‑Fi · −52 dBm</b></div>
+            <div class="row"><span>Température moteur</span><b id="infoTemp">29,0 °C</b></div>
+            <div class="row"><span>Dernière maintenance</span><b>12 sept. 2026</b></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+</div>
+</main>
+
+<div class="status-bar">
+    <div class="sb-line">Lame <b id="sbWear">87 %</b> · <b id="sbCount">1 248</b> cycles · Castonneur · FW 2.4.1</div>
+    <div class="cmdline" id="cmdline">› en attente de commande…</div>
+</div>
+
+<div class="pager">
+    <button class="nav-arrow" id="prevBtn" aria-label="Page précédente">←</button>
+    <span id="pageNum">1 / 4</span>
+    <button class="nav-arrow" id="nextBtn" aria-label="Page suivante">→</button>
+</div>
+<div class="toast" id="toast"></div>
+
+<div class="theme-fab">
+    <div class="theme-panel" id="themePanel" role="dialog" aria-label="Couleur du fond">
+        <h4>Couleur du fond</h4>
+        <div class="swatches" id="swatches"></div>
+    </div>
+    <button class="theme-btn" id="themeBtn" aria-label="Changer la couleur du fond" aria-expanded="false" title="Couleur du fond">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a9 9 0 1 0 0 18c1.1 0 1.8-.8 1.8-1.7 0-.5-.2-.9-.5-1.2-.3-.4-.5-.7-.5-1.2 0-.9.8-1.7 1.7-1.7H16a5 5 0 0 0 5-5c0-3.9-4-7.2-9-7.2z"/><circle cx="7.5" cy="11" r="1.1" fill="currentColor"/><circle cx="10.5" cy="7" r="1.1" fill="currentColor"/><circle cx="15.5" cy="7.5" r="1.1" fill="currentColor"/></svg>
+    </button>
+</div>
+
+<script>
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const fr = (n, d = 0) => Number(n).toLocaleString('fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d });
+
+const PAGES = ['angle', 'cycle', 'dust', 'info'];
+const ALL_PAGES = [...PAGES, 'run', 'blower'];
+const PARENT = { run: 'cycle', blower: 'dust' };
+const parentOf = n => PARENT[n] || n;
+
+/* Cycles prédéfinis (paramètres d'usine) */
+const CYCLES = {
+    express:   { code: 'C1', name: 'Express',    dur: 8,  passes: 1, rpm: 5200, db: 68, dust: 9,  batt: 0.4, desc: '1 passe · prise de notes rapide',        phases: [1, 3, 3, 1] },
+    standard:  { code: 'C2', name: 'Standard',   dur: 15, passes: 2, rpm: 4200, db: 63, dust: 12, batt: 0.6, desc: '2 passes · usage quotidien',              phases: [1, 4, 4, 2] },
+    precision: { code: 'C3', name: 'Précision',  dur: 22, passes: 3, rpm: 3800, db: 60, dust: 14, batt: 0.8, desc: '3 passes · pointe nette et régulière',    phases: [1, 4, 5, 2] },
+    dessin:    { code: 'C4', name: 'Dessin',     dur: 35, passes: 4, rpm: 3200, db: 58, dust: 18, batt: 1.1, desc: '4 passes · pointe longue et rodage',      phases: [1, 4, 6, 4] },
+    silence:   { code: 'C5', name: 'Silencieux', dur: 30, passes: 2, rpm: 1800, db: 46, dust: 11, batt: 0.7, desc: 'Basse vitesse · environnements calmes',  phases: [1, 4, 5, 2] }
+};
+const PHASE_NAMES = ['Prise', 'Dégrossi', 'Affûtage', 'Finition'];
+
+/* Types de crayon : conseils d'angle et influence sur le cycle */
+const TYPES = {
+    graphite:  { name: 'Graphite',   body: '#f2b705', lead: '#2b2b33', ang: 20, rpm: 1,   dust: 1,   note: 'Graphite HB : réglages standard, aucune adaptation.' },
+    couleur:   { name: 'Couleur',    body: '#2f7fd6', lead: '#d6402f', ang: 22, rpm: .85, dust: 1,   note: 'Mine de cire : vitesse réduite à 85 % pour éviter l\'échauffement.' },
+    pastel:    { name: 'Pastel',     body: '#d58fb7', lead: '#f0a5c8', ang: 28, rpm: .6,  dust: 1.4, note: 'Mine tendre : vitesse réduite à 60 %, copeaux +40 %.' },
+    charbon:   { name: 'Charbon',    body: '#3a3a3f', lead: '#0b0b0d', ang: 26, rpm: .55, dust: 1.8, note: 'Mine friable : vitesse réduite à 55 %, copeaux +80 %.' },
+    aquarelle: { name: 'Aquarelle',  body: '#3fb6a8', lead: '#2b7fb3', ang: 24, rpm: .7,  dust: 1.1, note: 'Mine soluble : vitesse réduite à 70 %, pointe protégée.' },
+    gras:      { name: 'Mine grasse', body: '#a83232', lead: '#6e1a1a', ang: 30, rpm: .5,  dust: 1.5, note: 'Mine épaisse et grasse : vitesse réduite à 50 %, copeaux +50 %.' }
+};
+function cyc(k) {
+    const c = CYCLES[k || state.cycle], t = TYPES[state.type];
+    return { ...c, rpm: Math.round(c.rpm * t.rpm / 50) * 50, dust: Math.round(c.dust * t.dust), db: Math.round(c.db - (1 - t.rpm) * 8) };
+}
+const state = {
+    angle: 20, type: 'graphite', cycle: 'standard', bin: 18, auto: true, threshold: 80,
+    connected: true, running: false, blowing: false, page: 'angle',
+    battery: 78, charging: false, total: 1248, today: 14, hours: 41.3, empties: 87, wear: 87, temp: 29,
+    counts: { express: 212, standard: 604, precision: 268, dessin: 96, silence: 68 }
+};
+const fx = { tx: 0, blade: 0, fan: 0, progress: 0 };
+let bladeAngle = 0, fanAngle = 0, needleCur = 0, needleTarget = 0;
+const cam = { t: 0, fx: 240, fy: 180, s: 1 };
+let camTimer;
+const FOCUS = {
+    cut:    { fx: 232, fy: 190, s: 1.45 },   // entrée du crayon + lame
+    blow:   { fx: 285, fy: 282, s: 1.7 },    // ventilateur + bac
+    angle:  { fx: 188, fy: 216, s: 2.0 },    // molette d'angle
+    screen: { fx: 326, fy: 138, s: 1.9 },    // écran
+    pencil: { fx: 95, fy: 150, s: 1.6 }      // crayon + entrée
+};
+let camHold = false;
+function zoomTo(name, autoResetMs) {
+    const f = FOCUS[name];
+    if (!f) return;
+    clearTimeout(camTimer);
+    Object.assign(cam, f);
+    gsap.to(cam, { t: 1, duration: 1.6, ease: 'power3.inOut', overwrite: true });
+    camHold = !!autoResetMs;
+    if (autoResetMs) camTimer = setTimeout(zoomReset, autoResetMs);
+}
+function zoomReset() {
+    clearTimeout(camTimer);
+    camHold = false;
+    gsap.to(cam, { t: 0, duration: 1.6, ease: 'power3.inOut', overwrite: true });
+}
+const queue = [];
+const logs = [];
+
+/* ---------- Transport (à brancher sur le vrai appareil) ---------- */
+const Transport = {
+    // >>> Remplacer par le lien réel : Web Bluetooth, WebSocket, MQTT over WS, API REST…
+    async send(cmd) { return new Promise(r => setTimeout(() => r({ ok: true }), 120)); }
+};
+async function send(cmd, msg) {
+    $('#cmdline').textContent = '› ' + JSON.stringify(cmd);
+    if (!state.connected) {
+        queue.push(cmd);
+        toast('Hors ligne — commande mise en file d’attente');
+        return;
+    }
+    await Transport.send(cmd);
+    if (msg) toast(msg);
+}
+
+/* ---------- Toast / journal ---------- */
+let toastTl;
+function toast(text) {
+    const t = $('#toast');
+    t.textContent = text;
+    if (toastTl) toastTl.kill();
+    toastTl = gsap.timeline()
+        .fromTo(t, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: .35, ease: 'power3.out' })
+        .to(t, { opacity: 0, y: 10, duration: .4, delay: 2.4 });
+}
+function log(text) {
+    const d = new Date();
+    const t = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+    logs.unshift({ t, text });
+    logs.length = Math.min(logs.length, 4);
+    $('#logList').innerHTML = logs.map(l => `<li><span>${l.t}</span>${l.text}</li>`).join('');
+    if ($('#blLog')) $('#blLog').innerHTML = $('#logList').innerHTML;
+}
+
+/* ---------- Navigation ---------- */
+let switching = false;
+function go(name) {
+    if (name === state.page || switching) return;
+    switching = true;
+    const fromEl = $(`.page[data-page="${state.page}"]`);
+    const toEl = $(`.page[data-page="${name}"]`);
+    const dir = PAGES.indexOf(parentOf(name)) >= PAGES.indexOf(parentOf(state.page)) ? 1 : -1;
+    gsap.to(fromEl.children, {
+        opacity: 0, x: -40 * dir, duration: .3, ease: 'power2.in',
+        onComplete: () => {
+            fromEl.classList.remove('active');
+            gsap.set(fromEl.children, { clearProps: 'all' });
+            toEl.classList.add('active');
+            gsap.fromTo($$('.col-left > *, .col-right > *', toEl),
+                { opacity: 0, y: 20 },
+                { opacity: 1, y: 0, duration: .55, stagger: .05, ease: 'power3.out', clearProps: 'all' });
+        }
+    });
+    if (!state.running && !state.blowing && !camHold) zoomReset();
+    state.page = name;
+    if (window.innerWidth <= 1100) window.scrollTo({ top: 0, behavior: 'smooth' });
+    history.replaceState(null, '', '#' + name);
+    $$('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.go === parentOf(name)));
+    $('#pageNum').textContent = (PAGES.indexOf(parentOf(name)) + 1) + ' / ' + PAGES.length;
+    refreshDedicated();
+    setTimeout(() => { switching = false; }, 900);
+}
+$$('[data-go]').forEach(b => b.addEventListener('click', () => go(b.dataset.go)));
+$('#prevBtn').onclick = () => go(PAGES[Math.max(0, PAGES.indexOf(parentOf(state.page)) - 1)]);
+$('#nextBtn').onclick = () => go(PAGES[Math.min(PAGES.length - 1, PAGES.indexOf(parentOf(state.page)) + 1)]);
+window.addEventListener('keydown', e => {
+    if (e.target.tagName === 'INPUT') return;
+    if (e.key === 'ArrowRight') $('#nextBtn').click();
+    if (e.key === 'ArrowLeft') $('#prevBtn').click();
+});
+
+/* ---------- Connexion ---------- */
+$('#connBtn').addEventListener('click', () => {
+    state.connected = !state.connected;
+    $('#connBtn').classList.toggle('offline', !state.connected);
+    $('#connTxt').textContent = state.connected ? 'Castonneur' : 'Hors ligne';
+    $('#connSub').textContent = state.connected ? ' · Connecté' : '';
+    if (state.connected) {
+        const n = queue.length;
+        queue.length = 0;
+        toast(n ? `Reconnecté — ${n} commande(s) synchronisée(s)` : 'Reconnecté à Castonneur');
+        log('Connecté à Castonneur');
+    } else {
+        toast('Déconnecté du taille-crayon');
+        log('Connexion perdue');
+    }
+    renderBin();
+    renderInfo();
+});
+
+/* ---------- Écran du taille-crayon ---------- */
+function updateScreen(stateTxt) {
+    const c = cyc();
+    $('#scrAngle').textContent = state.angle + '°';
+    $('#scrCycle').textContent = c.code + ' ' + c.name + ' · ' + TYPES[state.type].name;
+    $('#scrBin').textContent = 'BAC ' + Math.round(state.bin) + ' %';
+    if (stateTxt) $('#scrState').textContent = stateTxt;
+}
+
+/* ---------- Types de crayon ---------- */
+function renderTypes() {
+    $('#typeGrid').innerHTML = Object.entries(TYPES).map(([k, t]) =>
+        `<button class="type-btn${k === state.type ? ' active' : ''}" data-k="${k}"><i class="tp" style="--b:${t.body};--l:${t.lead}"></i><b>${t.name}</b><small>${t.ang}° conseillé</small></button>`).join('');
+    $$('#typeGrid .type-btn').forEach(b => b.addEventListener('click', () => setType(b.dataset.k)));
+    $('#typeNote').textContent = TYPES[state.type].note;
+}
+function paintPencil() {
+    const t = TYPES[state.type];
+    $('#pencilBody').setAttribute('fill', t.body); $('#pencilLead').setAttribute('fill', t.lead);
+    $('#prevBody').setAttribute('fill', t.body); $('#prevLead').setAttribute('fill', t.lead);
+}
+function setType(k) {
+    if (state.running) { toast('Un cycle est en cours'); return; }
+    state.type = k;
+    const t = TYPES[k];
+    paintPencil();
+    renderTypes();
+    setAngle(t.ang);
+    renderSpecs(); updateScreen(); refreshDedicated();
+    if (!state.blowing) zoomTo('pencil', 3200);
+    send({ cmd: 'set_pencil_type', type: k, angle: t.ang }, `Crayon « ${t.name} » · angle conseillé ${t.ang}°`);
+    log('Type de crayon : ' + t.name);
+}
+
+/* ---------- Pages dédiées ---------- */
+function refreshDedicated() {
+    const c = cyc();
+    $('#pgCycle').textContent = c.code + ' · ' + c.name;
+    $('#pgAngle').textContent = state.angle + '°';
+    $('#pgBin').textContent = Math.round(state.bin) + ' %';
+    $('#rnEyebrow').textContent = 'Cycle ' + c.code + ' · ' + c.passes + ' passe' + (c.passes > 1 ? 's' : '');
+    $('#rnName').textContent = c.name;
+    $('#rnDesc').textContent = c.desc + '. Crayon : ' + TYPES[state.type].name + ' — vérifiez l\'angle puis lancez le taillage.';
+    $('#rnAngle').textContent = state.angle + '°';
+    $('#rnDust').textContent = '+' + c.dust + ' %';
+    $('#rnBin').textContent = Math.min(100, Math.round(state.bin + c.dust)) + ' %';
+    $('#rnBat').textContent = fr(Math.max(0, state.battery - c.batt), 1) + ' %';
+    $('#otherCycles').innerHTML = Object.entries(CYCLES).map(([k, x]) =>
+        `<button class="chip${k === state.cycle ? ' active' : ''}" data-k="${k}">${x.code} ${x.name}</button>`).join('');
+    $$('#otherCycles .chip').forEach(ch => ch.addEventListener('click', () => {
+        if (state.running) { toast('Un cycle est en cours'); return; }
+        selectCycle(ch.dataset.k);
+    }));
+}
+function renderBlower() {
+    const b = state.blowing;
+    $('#blTitle').textContent = b ? 'en marche' : 'prête';
+    $('#blPct').textContent = Math.round(state.bin) + ' %';
+    $('#blBar').style.width = clamp(state.bin, 0, 100) + '%';
+    $('#blBar').style.background = b ? '#7dd3fc' : 'var(--accent)';
+    const pill = $('#blPill');
+    pill.className = 'pill' + (b ? ' blow' : ' warn');
+    pill.textContent = b ? 'En cours' : (state.bin < 5 ? 'Bac vide' : 'Arrêtée');
+    $('#blFlow').textContent = b ? '38 L/min' : '0 L/min';
+    $('#blBtn').disabled = b;
+    $('#blBtnTxt').textContent = b ? 'Soufflerie en cours' : 'Relancer la soufflerie';
+    $('#blInfo').textContent = b ? 'Les copeaux sont évacués. Le bac se vide progressivement.'
+        : (state.bin < 5 ? 'Bac vidé. La soufflerie est de nouveau disponible.' : 'La soufflerie est arrêtée. Relancez-la pour vider le bac.');
+    $('#blLog').innerHTML = logs.map(l => `<li><span>${l.t}</span>${l.text}</li>`).join('');
+}
+
+/* ---------- PAGE 1 : angle ---------- */
+function renderAngle() {
+    const a = state.angle, h = a * Math.PI / 360;
+    const mm = 3.5 / Math.tan(h);
+    const Lpx = 35 / Math.tan(h) * 0.5;
+    const tipX = 60 + Lpx;
+    $('#angleVal').textContent = a + '°';
+    $('#tipLen').textContent = fr(mm, 1) + ' mm';
+    $('#tipProfile').textContent = a < 14 ? 'Très fine · fragile' : a < 19 ? 'Fine · dessin' : a < 26 ? 'Équilibrée' : 'Robuste';
+    $('#prevWood').setAttribute('points', `60,25 60,95 ${tipX},60`);
+    const t = .3;
+    $('#prevLead').setAttribute('points', `${60 + Lpx * (1 - t)},${60 - 35 * t} ${60 + Lpx * (1 - t)},${60 + 35 * t} ${tipX},60`);
+    const r = 34, x1 = tipX - r * Math.cos(h), y1 = 60 - r * Math.sin(h), y2 = 60 + r * Math.sin(h);
+    $('#prevArc').setAttribute('d', `M ${x1} ${y1} A ${r} ${r} 0 0 0 ${x1} ${y2}`);
+    $('#prevTxt').setAttribute('x', Math.min(tipX + 8, 340));
+    $('#prevTxt').setAttribute('y', 40);
+    needleTarget = (a - 25) * 3.2;
+    $$('#angleChips .chip').forEach(c => c.classList.toggle('active', +c.dataset.a === a));
+    updateScreen();
+    markDial();
+    if (typeof refreshDedicated === 'function' && $('#pgAngle')) { $('#pgAngle').textContent = a + '°'; $('#rnAngle').textContent = a + '°'; }
+}
+let angleTimer;
+function setAngle(v) {
+    state.angle = clamp(+v, 10, 40);
+    $('#angleRange').value = state.angle;
+    renderAngle();
+    clearTimeout(angleTimer);
+    if (!state.running && !state.blowing) zoomTo('angle', 3200);
+    angleTimer = setTimeout(() => send({ cmd: 'set_angle', deg: state.angle }, `Angle ${state.angle}° envoyé au taille-crayon`), 450);
+}
+$('#angleRange').addEventListener('input', e => setAngle(e.target.value));
+$$('#angleChips .chip').forEach(c => c.addEventListener('click', () => setAngle(c.dataset.a)));
+
+/* ---------- PAGE 2 : cycles ---------- */
+function renderCycles() {
+    const box = $('#cycleList');
+    box.innerHTML = '';
+    Object.entries(CYCLES).forEach(([k, c]) => {
+        const b = document.createElement('button');
+        b.className = 'cycle-row' + (k === state.cycle ? ' active' : '');
+        b.dataset.k = k;
+        b.innerHTML = `<span class="passes">${c.code}</span><span class="cr-txt"><b>${c.name}</b><small>${c.desc}</small></span><span class="cr-dur">${c.dur} s</span>`;
+        b.addEventListener('click', () => openCycle(k));
+        box.appendChild(b);
+    });
+    renderTimeline();
+    renderSpecs();
+}
+function openCycle(k) {
+    if (state.running) { toast('Un cycle est en cours — page du cycle actif'); go('run'); return; }
+    selectCycle(k);
+    go('run');
+}
+function selectCycle(k) {
+    if (state.running) return;
+    state.cycle = k;
+    $$('.cycle-row').forEach(r => r.classList.toggle('active', r.dataset.k === k));
+    renderTimeline();
+    renderSpecs();
+    updateScreen();
+    renderInfo();
+    refreshDedicated();
+    if (!state.running && !state.blowing) zoomTo('screen', 3000);
+    send({ cmd: 'set_cycle', cycle: k }, `Cycle ${CYCLES[k].code} « ${CYCLES[k].name} » envoyé`);
+}
+function renderSpecs() {
+    const c = cyc();
+    const items = [
+        ['Durée', c.dur + ' s'], ['Passes', c.passes], ['Vitesse', fr(c.rpm) + ' tr/min'],
+        ['Niveau sonore', c.db + ' dB'], ['Copeaux', '+' + c.dust + ' % bac'], ['Batterie', '−' + fr(c.batt, 1) + ' %']
+    ];
+    $('#specGrid').innerHTML = items.map(([l, v]) => `<div class="metric"><span>${l}</span><b>${v}</b></div>`).join('');
+}
+function renderTimeline() {
+    const c = cyc();
+    $('#timeline').innerHTML = c.phases.map((w, i) =>
+        `<div class="seg" style="flex:${w}"><div class="bar"><div class="fill"></div></div><small>${PHASE_NAMES[i]}</small></div>`).join('');
+}
+function updateProgress(p) {
+    const c = cyc();
+    const total = c.phases.reduce((a, b) => a + b, 0);
+    let acc = 0;
+    $$('#timeline .fill').forEach((f, i) => {
+        const w = c.phases[i] / total;
+        f.style.width = clamp((p - acc) / w, 0, 1) * 100 + '%';
+        acc += w;
+    });
+    const left = Math.ceil(c.dur * 0.25 * (1 - p));
+    $('#runInfo').textContent = `Cycle en cours · ${Math.round(p * 100)} % · ~${left} s restantes`;
+    $('#scrState').textContent = Math.round(p * 100) + ' %';
+    $('#rnPct').textContent = Math.round(p * 100) + ' %';
+    $('#rnBar').style.width = p * 100 + '%';
+    $('#rnPill').className = 'pill blow'; $('#rnPill').textContent = 'En cours';
+}
+
+function spawnShaving() {
+    const g = $('#shavings');
+    const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    p.setAttribute('d', 'M0 0 q5 -8 10 0 t10 0');
+    p.setAttribute('fill', 'none');
+    p.setAttribute('stroke', '#e8c48b');
+    p.setAttribute('stroke-width', '3');
+    p.setAttribute('stroke-linecap', 'round');
+    g.appendChild(p);
+    const x0 = 322 + Math.random() * 14;
+    gsap.fromTo(p, { x: x0, y: 244, rotation: 0, opacity: 1 },
+        { x: x0 + (Math.random() - .5) * 30, y: 296, rotation: (Math.random() - .5) * 200, opacity: 0, duration: .8 + Math.random() * .4, ease: 'power1.in', onComplete: () => p.remove() });
+}
+
+let shavingTimer;
+function runCycle() {
+    if (state.running || state.blowing) return;
+    if (!state.connected) { toast('Hors ligne — reconnectez le taille-crayon'); return; }
+    if (state.battery < 5) { toast('Batterie trop faible (< 5 %) — branchez le chargeur'); return; }
+    const c = cyc();
+    state.running = true;
+    $('#runBtn').disabled = true;
+    $('#runTxt').textContent = 'Taillage en cours';
+    $('#rnPill').className = 'pill blow'; $('#rnPill').textContent = 'En cours';
+    zoomTo('cut');
+    send({ cmd: 'start_cycle', cycle: state.cycle, angle: state.angle });
+    const T = Math.max(3, c.dur * 0.25);
+    shavingTimer = setInterval(spawnShaving, 130);
+    fx.progress = 0;
+    gsap.timeline({ onComplete: finishCycle })
+        .to(fx, { tx: 62, duration: .7, ease: 'power2.out' })
+        .to(fx, { blade: c.rpm / 380, duration: .5 }, '<')
+        .to(fx, { progress: 1, duration: T, ease: 'none', onUpdate: () => updateProgress(fx.progress) })
+        .add(() => clearInterval(shavingTimer))
+        .to(fx, { blade: 0, duration: .6 })
+        .to(fx, { tx: 0, duration: .8, ease: 'back.out(1.4)' }, '<');
+}
+function finishCycle() {
+    const c = cyc();
+    state.running = false;
+    state.total++; state.today++;
+    state.counts[state.cycle]++;
+    state.hours += c.dur / 3600;
+    state.wear = Math.max(0, +(state.wear - 0.05).toFixed(2));
+    state.battery = Math.max(0, state.battery - c.batt);
+    state.bin = clamp(state.bin + c.dust, 0, 100);
+    $('#runBtn').disabled = false;
+    $('#runTxt').textContent = 'Lancer le cycle';
+    $('#runInfo').textContent = 'Taillage terminé — pointe ' + state.angle + '°';
+    $('#rnPct').textContent = '100 %'; $('#rnBar').style.width = '100%';
+    $('#rnPill').className = 'pill'; $('#rnPill').textContent = 'Terminé';
+    $('#pgLast').textContent = c.code + ' · ' + c.name;
+    refreshDedicated();
+    setTimeout(() => { if (!state.running) { $('#rnPct').textContent = '0 %'; $('#rnBar').style.width = '0%'; $('#rnPill').className = 'pill warn'; $('#rnPill').textContent = 'Prêt'; } }, 4000);
+    log(`Cycle ${c.code} terminé (+${c.dust} % bac)`);
+    setTimeout(() => { if (!state.running && !state.blowing) zoomReset(); }, 1600);
+    send({ cmd: 'cycle_done', cycle: state.cycle, bin: Math.round(state.bin) });
+    updateScreen('PRÊT');
+    renderBin();
+    renderInfo();
+    checkBin();
+}
+$('#runBtn').addEventListener('click', runCycle);
+
+/* ---------- PAGE 3 : bac + soufflerie ---------- */
+function renderBin() {
+    const L = clamp(state.bin, 0, 100);
+    const full = L >= state.threshold;
+    const h = 48 * L / 100;
+    $('#binFill').setAttribute('y', 310 - h);
+    $('#binFill').setAttribute('height', h);
+    $('#binFill').setAttribute('fill', full ? '#f87171' : '#d9b27c');
+    $('#binThr').setAttribute('y1', 310 - 48 * state.threshold / 100);
+    $('#binThr').setAttribute('y2', 310 - 48 * state.threshold / 100);
+    $('#gaugeFill').style.height = L + '%';
+    $('#gaugeThr').style.bottom = state.threshold + '%';
+    $('#gauge').classList.toggle('full', full);
+    $('#binPct').textContent = Math.round(L) + ' %';
+    const pill = $('#binPill');
+    let cls = 'pill', txt = 'Niveau normal';
+    if (state.blowing) { cls = 'pill blow'; txt = 'Soufflerie active'; }
+    else if (full) { cls = 'pill full'; txt = 'Bac plein'; }
+    else if (L >= state.threshold - 15) { cls = 'pill warn'; txt = 'Bientôt plein'; }
+    pill.className = cls; pill.textContent = txt;
+    $('#alertBox').classList.toggle('show', full && !state.auto && !state.blowing);
+    $('#led').setAttribute('fill', !state.connected ? '#94a3b8' : full ? '#f87171' : '#4ade80');
+    $('#ledBin').setAttribute('fill', full ? '#f87171' : L >= state.threshold - 15 ? '#fde047' : '#6b7280');
+    $('#ledWifi').setAttribute('fill', state.connected ? '#4ade80' : '#6b7280');
+    $('#scrWifi').setAttribute('opacity', state.connected ? 1 : .25);
+    $('#scrBin').textContent = 'BAC ' + Math.round(L) + ' %';
+    $('#pgBin').textContent = Math.round(L) + ' %';
+    renderBlower();
+}
+function checkBin() {
+    if (state.bin >= state.threshold && state.auto && !state.blowing) blow('auto');
+}
+function blow(reason) {
+    if (state.blowing) return;
+    if (state.running) { toast('Cycle en cours — soufflerie indisponible'); return; }
+    if (!state.connected) { toast('Hors ligne — reconnectez le taille-crayon'); return; }
+    if (state.battery < 2) { toast('Batterie trop faible — branchez le chargeur'); return; }
+    state.blowing = true;
+    const lvl = Math.round(state.bin);
+    send({ cmd: 'blower_on', reason, level: lvl });
+    toast(reason === 'auto' ? `Bac à ${lvl} % — soufflerie activée automatiquement` : 'Soufflerie activée');
+    log(reason === 'auto' ? `Bac à ${lvl} % → soufflerie auto` : 'Soufflerie activée manuellement');
+    $('#stage').classList.add('blowing');
+    zoomTo('blow');
+    $('#blowBtn').disabled = true;
+    $('#blowTxt').textContent = 'Soufflerie en cours';
+    $('#blStart').textContent = lvl + ' %';
+    $('#blReason').textContent = reason === 'auto' ? 'Automatique' : 'Manuel';
+    updateScreen('AIR');
+    renderBin();
+    const puffs = setInterval(spawnPuff, 90);
+    const dur = Math.max(1.6, 0.8 + state.bin * 0.03);
+    gsap.timeline({
+        onComplete: () => {
+            clearInterval(puffs);
+            state.blowing = false;
+            if (lvl >= 5) state.empties++;
+            state.battery = Math.max(0, state.battery - 0.3);
+            $('#stage').classList.remove('blowing');
+            $('#blowBtn').disabled = false;
+            $('#blowTxt').textContent = 'Activer la soufflerie';
+            send({ cmd: 'blower_off' }, 'Bac vidé');
+            setTimeout(() => { if (!state.running && !state.blowing) zoomReset(); }, 1400);
+            log('Bac vidé');
+            updateScreen('PRÊT');
+            renderBin();
+            renderInfo();
+            renderBlower();
+        }
+    })
+        .to(fx, { fan: 38, duration: .5, ease: 'power2.in' })
+        .to(state, { bin: 0, duration: dur, ease: 'power1.inOut', onUpdate: renderBin }, '<.2')
+        .to(fx, { fan: 0, duration: .8, ease: 'power2.out' });
+}
+function spawnPuff() {
+    const g = $('#puffs');
+    const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    c.setAttribute('r', 2 + Math.random() * 3);
+    c.setAttribute('fill', '#e8c48b');
+    g.appendChild(c);
+    gsap.fromTo(c, { x: 380 + Math.random() * 20, y: 270 + Math.random() * 30, opacity: .9 },
+        { x: 440 + Math.random() * 60, y: 230 - Math.random() * 80, opacity: 0, duration: .8, ease: 'power1.out', onComplete: () => c.remove() });
+}
+$('#autoToggle').addEventListener('click', e => {
+    state.auto = !state.auto;
+    e.currentTarget.classList.toggle('on', state.auto);
+    send({ cmd: 'set_auto_blower', on: state.auto }, state.auto ? 'Soufflerie automatique activée' : 'Soufflerie automatique désactivée');
+    renderBin();
+    checkBin();
+});
+let thrTimer;
+$('#thrRange').addEventListener('input', e => {
+    state.threshold = +e.target.value;
+    $('#thrTxt').textContent = state.threshold + ' %';
+    renderBin();
+    clearTimeout(thrTimer);
+    thrTimer = setTimeout(() => { send({ cmd: 'set_threshold', pct: state.threshold }, `Seuil réglé à ${state.threshold} %`); checkBin(); }, 450);
+});
+$('#blowBtn').addEventListener('click', () => {
+    if (state.blowing) { go('blower'); return; }
+    blow('manuel');
+    if (state.blowing) go('blower');
+});
+$('#blBtn').addEventListener('click', () => blow('manuel'));
+$('#fillBtn').addEventListener('click', () => {
+    if (state.blowing || state.running) return;
+    state.bin = clamp(state.bin + 15, 0, 100);
+    for (let i = 0; i < 6; i++) setTimeout(spawnShaving, i * 90);
+    renderBin();
+    updateScreen();
+    log('Taillage simulé (+15 %)');
+    checkBin();
+});
+
+/* ---------- PAGE 4 : informations ---------- */
+function renderBattery() {
+    const b = clamp(state.battery, 0, 100);
+    const col = state.charging ? '#7dd3fc' : b <= 15 ? '#f87171' : b <= 30 ? '#fde047' : '#4ade80';
+    $('#hdrBatFill').setAttribute('width', 18 * b / 100);
+    $('#hdrBatFill').setAttribute('fill', col);
+    $('#hdrBatTxt').textContent = Math.round(b) + ' %' + (state.charging ? ' ⚡' : '');
+    $('#batPct').textContent = fr(b, 0) + ' %';
+    $('#batBar').style.width = b + '%';
+    $('#batBar').style.background = col;
+    const st = $('#batState');
+    let cls = 'pill', txt = 'Bonne';
+    if (state.charging) { cls = 'pill blow'; txt = 'En charge'; }
+    else if (b <= 15) { cls = 'pill full'; txt = 'Faible'; }
+    else if (b <= 30) { cls = 'pill warn'; txt = 'Moyenne'; }
+    st.className = cls; st.textContent = txt;
+    const c = cyc();
+    $('#batAuto').textContent = '≈ ' + Math.floor(b / c.batt) + ' cycles';
+    $('#batVolt').textContent = fr(3.3 + 0.9 * b / 100, 2) + ' V';
+    $('#batFull').textContent = state.charging ? '≈ ' + Math.ceil((100 - b) / 0.6) + ' min' : '—';
+    /* maquette : segments, écran, voyants */
+    const segs = $$('#batSegs rect'), on = Math.ceil(b / 20);
+    segs.forEach((r, i) => { r.setAttribute('fill', i < on ? col : 'rgba(255,255,255,.12)'); });
+    $('#batMachPct').textContent = Math.round(b) + ' %';
+    $('#scrBat').textContent = Math.round(b) + ' %';
+    $('#scrBatFill').setAttribute('width', 21 * b / 100);
+    $('#scrBatFill').setAttribute('fill', col);
+    $('#ledChg').setAttribute('fill', state.charging ? '#7dd3fc' : '#6b7280');
+    $('#chargeBtn').textContent = state.charging ? 'Débrancher le chargeur' : 'Simuler la charge';
+}
+function renderInfo() {
+    renderBattery();
+    $('#infoTotal').textContent = fr(state.total);
+    $('#infoToday').textContent = fr(state.today);
+    $('#infoHours').textContent = fr(state.hours, 1) + ' h';
+    $('#infoEmpties').textContent = fr(state.empties);
+    $('#infoWear').textContent = fr(state.wear, 0) + ' %';
+    $('#sbWear').textContent = fr(state.wear, 0) + ' %';
+    $('#sbCount').textContent = fr(state.total);
+    $('#infoLink').textContent = state.connected ? 'Wi‑Fi · −52 dBm' : 'Hors ligne';
+    $('#infoTemp').textContent = fr(state.temp, 1) + ' °C';
+    const max = Math.max(...Object.values(state.counts));
+    $('#usageBars').innerHTML = Object.entries(CYCLES).map(([k, c]) =>
+        `<div class="ubar"><span>${c.name}</span><div class="track"><i style="width:${state.counts[k] / max * 100}%"></i></div><b>${fr(state.counts[k])}</b></div>`).join('');
+}
+$('#chargeBtn').addEventListener('click', () => {
+    state.charging = !state.charging;
+    toast(state.charging ? 'Chargeur branché' : 'Chargeur débranché');
+    renderBattery();
+});
+setInterval(() => {
+    if (state.charging && state.battery < 100) {
+        state.battery = Math.min(100, state.battery + 0.6);
+        if (state.battery >= 100) { state.charging = false; toast('Charge complète'); }
+        renderBattery();
+    }
+    const target = state.running ? 29 + CYCLES[state.cycle].rpm / 5200 * 14 : 29;
+    state.temp += (target - state.temp) * 0.15;
+    if (state.page === 'info') $('#infoTemp').textContent = fr(state.temp, 1) + ' °C';
+}, 1000);
+
+/* ---------- Souris : inclinaison du taille-crayon ---------- */
+let mouse = { x: 0, y: 0 };
+let cur = { x: 0, y: 0 };
+function setPointer(x, y) {
+    mouse.x = x / window.innerWidth - .5;
+    mouse.y = y / window.innerHeight - .5;
+}
+window.addEventListener('mousemove', e => setPointer(e.clientX, e.clientY));
+window.addEventListener('touchmove', e => { const t = e.touches[0]; if (t) setPointer(t.clientX, t.clientY); }, { passive: true });
+const stageWrap = $('.stage-wrap'), camG = $('#camG'), pencilG = $('#pencilG'), bladeEl = $('#blade'), fanEl = $('#fan'), needle = $('#needle'), tilt = $('#stageTilt');
+
+function animate() {
+    const time = Date.now() * 0.001;
+    cur.x += (mouse.x - cur.x) * .05;
+    cur.y += (mouse.y - cur.y) * .05;
+    tilt.style.transform = `perspective(1200px) rotateY(${cur.x * 22}deg) rotateX(${-cur.y * 14}deg) rotateZ(${cur.x * -3}deg)`;
+    bladeAngle += fx.blade;
+    fanAngle += fx.fan;
+    needleCur += (needleTarget - needleCur) * .12;
+    const jit = state.running ? Math.sin(time * 70) * 1.4 : 0;
+    pencilG.setAttribute('transform', `translate(${fx.tx + jit} ${jit * .4})`);
+    bladeEl.setAttribute('transform', `rotate(${bladeAngle} 330 216)`);
+    fanEl.setAttribute('transform', `translate(214 288) rotate(${fanAngle})`);
+    needle.setAttribute('transform', `rotate(${needleCur} 188 216)`);
+    const vb = $('#stage').viewBox.baseVal;
+    const cx = vb.x + vb.width / 2, cy = vb.y + vb.height / 2;
+    const sc = 1 + (cam.s - 1) * cam.t;
+    const fxe = cx + (cam.fx - cx) * cam.t, fye = cy + (cam.fy - cy) * cam.t;
+    stageWrap.style.setProperty('--lens', cam.t.toFixed(3));
+    camG.setAttribute('transform', `translate(${cx} ${cy}) scale(${sc}) translate(${-fxe} ${-fye})`);
+    requestAnimationFrame(animate);
+}
+animate();
+
+/* ---------- Logo Castonneur ---------- */
+const LOGO = 'data:image/png;base64,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';
+$$('[data-logo]').forEach(i => i.src = LOGO);
+$('#svgLogo').setAttribute('href', LOGO);
+$('#favicon').href = LOGO;
+
+/* ---------- Thèmes de couleur du fond ---------- */
+const THEMES = {
+    bordeaux: { label: 'Bordeaux', inner: '#7c1d3c', mid: '#4d0f26', outer: '#1b050d', b1: '#b02a58', b2: '#8a1f3f', accent: '#e6c7a0', on: '#2b0b16' },
+    foret:    { label: 'Forêt',    inner: '#0f6b50', mid: '#063c2e', outer: '#01140f', b1: '#1f9d73', b2: '#0f6b50', accent: '#f0dcb0', on: '#06231a' },
+    ocean:    { label: 'Océan',    inner: '#0b4f8a', mid: '#04294e', outer: '#010c14', b1: '#1f7acb', b2: '#0b4f8a', accent: '#bfe3ff', on: '#04213d' },
+    nuit:     { label: 'Nuit',     inner: '#4b2a86', mid: '#25134d', outer: '#0b0618', b1: '#7a4fd0', b2: '#4b2a86', accent: '#e6d3ff', on: '#1d0d3d' },
+    graphite: { label: 'Graphite', inner: '#3d434c', mid: '#1f2227', outer: '#07080a', b1: '#6b7480', b2: '#3d434c', accent: '#f0e6d6', on: '#15171a' },
+    cuivre:   { label: 'Cuivre',   inner: '#a0511f', mid: '#5e2a0c', outer: '#1c0b03', b1: '#d9772f', b2: '#a0511f', accent: '#ffe2b8', on: '#2e1305' }
+};
+function applyTheme(key, save) {
+    const t = THEMES[key] || THEMES.bordeaux;
+    const r = document.documentElement.style;
+    r.setProperty('--bg-inner', t.inner); r.setProperty('--bg-mid', t.mid); r.setProperty('--bg-outer', t.outer);
+    r.setProperty('--blob1', t.b1); r.setProperty('--blob2', t.b2);
+    r.setProperty('--accent', t.accent); r.setProperty('--on-accent', t.on);
+    $$('#swatches .swatch').forEach(b => b.classList.toggle('active', b.dataset.k === key));
+    if (save) { try { localStorage.setItem('castonneur-theme', key); } catch (e) {} }
+}
+(function () {
+    $('#swatches').innerHTML = Object.entries(THEMES).map(([k, t]) =>
+        `<button class="swatch" data-k="${k}" aria-label="${t.label}"><i style="background:radial-gradient(circle at 35% 30%, ${t.b1}, ${t.inner} 55%, ${t.outer})"></i>${t.label}</button>`).join('');
+    const btn = $('#themeBtn'), panel = $('#themePanel');
+    const toggle = open => { panel.classList.toggle('open', open); btn.setAttribute('aria-expanded', open); };
+    btn.addEventListener('click', e => { e.stopPropagation(); toggle(!panel.classList.contains('open')); });
+    panel.addEventListener('click', e => e.stopPropagation());
+    document.addEventListener('click', () => toggle(false));
+    window.addEventListener('keydown', e => { if (e.key === 'Escape') toggle(false); });
+    $$('#swatches .swatch').forEach(b => b.addEventListener('click', () => { applyTheme(b.dataset.k, true); toast('Fond « ' + THEMES[b.dataset.k].label + ' »'); }));
+    let saved = null;
+    try { saved = localStorage.getItem('castonneur-theme'); } catch (e) {}
+    applyTheme(saved && THEMES[saved] ? saved : 'bordeaux', false);
+})();
+
+/* ---------- Fond animé : bulles ---------- */
+(function () {
+    const cv = $('#bgCanvas'), ctx = cv.getContext('2d');
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let W, H, dpr, parts = [];
+    function size() {
+        dpr = Math.min(window.devicePixelRatio || 1, 2);
+        W = cv.clientWidth; H = cv.clientHeight;
+        cv.width = W * dpr; cv.height = H * dpr;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        const n = Math.round(clamp(W * H / 30000, 18, 48));
+        parts = Array.from({ length: n }, () => mk(true));
+    }
+    function mk(any) {
+        const r = Math.random() * 11 + 3;
+        return { x: Math.random() * W, y: any ? Math.random() * H : H + r + 10, r, v: .25 + r * .035 + Math.random() * .2,
+                 a: Math.random() * .25 + .18, ph: Math.random() * 6.28, wob: Math.random() * .5 + .15 };
+    }
+    let boost = 1, t0 = 0;
+    function frame(t) {
+        const target = state.blowing ? 4.5 : state.running ? 2.4 : 1;
+        boost += (target - boost) * .04;
+        ctx.clearRect(0, 0, W, H);
+        for (const p of parts) {
+            p.y -= p.v * boost;
+            const x = p.x + Math.sin(t / 1400 + p.ph) * p.wob * p.r * 1.6;
+            if (p.y < -p.r - 10) Object.assign(p, mk(false));
+            const g = ctx.createRadialGradient(x - p.r * .35, p.y - p.r * .35, p.r * .1, x, p.y, p.r);
+            g.addColorStop(0, `rgba(255,255,255,${p.a * .55})`);
+            g.addColorStop(.7, `rgba(255,255,255,${p.a * .12})`);
+            g.addColorStop(1, `rgba(255,255,255,${p.a * .3})`);
+            ctx.beginPath(); ctx.arc(x, p.y, p.r, 0, 6.283);
+            ctx.fillStyle = g; ctx.fill();
+            ctx.lineWidth = 1; ctx.strokeStyle = `rgba(255,255,255,${p.a * 1.1})`; ctx.stroke();
+            ctx.beginPath(); ctx.arc(x - p.r * .38, p.y - p.r * .38, p.r * .22, 0, 6.283);
+            ctx.fillStyle = `rgba(255,255,255,${p.a * 1.6})`; ctx.fill();
+        }
+        if (!reduce) requestAnimationFrame(frame);
+    }
+    size();
+    window.addEventListener('resize', size);
+    if (reduce) { frame(0); } else requestAnimationFrame(frame);
+})();
+
+/* ---------- Graduations de la molette d'angle ---------- */
+(function () {
+    const NS = 'http://www.w3.org/2000/svg', cx = 188, cy = 216;
+    const T = $('#dialTicks'), L = $('#dialLabels');
+    for (let v = 10; v <= 40; v++) {
+        const th = (v - 25) * 3.2 * Math.PI / 180, major = v % 5 === 0;
+        const r1 = major ? 27 : 30.5, r2 = 33;
+        const ln = document.createElementNS(NS, 'line');
+        ln.setAttribute('x1', cx + r1 * Math.sin(th)); ln.setAttribute('y1', cy - r1 * Math.cos(th));
+        ln.setAttribute('x2', cx + r2 * Math.sin(th)); ln.setAttribute('y2', cy - r2 * Math.cos(th));
+        ln.setAttribute('stroke', major ? 'rgba(60,20,32,.7)' : 'rgba(60,20,32,.3)');
+        ln.setAttribute('stroke-width', major ? 1.6 : .9);
+        T.appendChild(ln);
+        if (major) {
+            const R = 45;
+            const t = document.createElementNS(NS, 'text');
+            t.setAttribute('x', cx + R * Math.sin(th)); t.setAttribute('y', cy - R * Math.cos(th) + 2);
+            t.setAttribute('font-size', 5.8); t.setAttribute('fill', 'rgba(60,20,32,.75)');
+            t.dataset.v = v; t.textContent = v + '°';
+            L.appendChild(t);
+        }
+    }
+})();
+function markDial() {
+    const near = Math.round(state.angle / 5) * 5;
+    $$('#dialLabels text').forEach(t => {
+        const on = +t.dataset.v === near;
+        t.setAttribute('fill', on ? '#8f1d3f' : 'rgba(60,20,32,.7)');
+        t.setAttribute('font-size', on ? 7.4 : 5.8);
+    });
+}
+
+/* ---------- Cadrage de la scène selon l'écran ---------- */
+function fitStage() {
+    $('#stage').setAttribute('viewBox', window.innerWidth <= 1100 ? '-30 55 510 300' : '0 0 480 360');
+}
+window.addEventListener('resize', fitStage);
+fitStage();
+
+/* ---------- Init ---------- */
+renderTypes();
+paintPencil();
+renderCycles();
+renderAngle();
+renderBin();
+renderInfo();
+log('Connecté à Castonneur');
+refreshDedicated();
+renderBlower();
+const start = location.hash.replace('#', '');
+if (ALL_PAGES.includes(start) && start !== 'angle') {
+    $('.page.active').classList.remove('active');
+    $(`.page[data-page="${start}"]`).classList.add('active');
+    state.page = start;
+    $$('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.go === parentOf(start)));
+    $('#pageNum').textContent = (PAGES.indexOf(parentOf(start)) + 1) + ' / ' + PAGES.length;
+}
+</script>
+</body>
+</html>
